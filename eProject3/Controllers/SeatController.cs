@@ -1,7 +1,9 @@
 ﻿using eProject3.Interfaces;
 using eProject3.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace eProject3.Controllers
 {
@@ -9,7 +11,7 @@ namespace eProject3.Controllers
     [ApiController]
     public class SeatController : ControllerBase
     {
-        private ISeatRepo repo;
+        private readonly ISeatRepo repo;
 
         public SeatController(ISeatRepo repo)
         {
@@ -22,8 +24,8 @@ namespace eProject3.Controllers
             return Ok(await repo.GetSeats());
         }
 
-        [HttpGet("coach/{coachid}")]
-        public async Task<ActionResult<IEnumerable<Seat>>> GetSeatsByCoachId(int coachId)
+        [HttpGet("coach/{coachId}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetSeatsByCoachId(int coachId)
         {
             try
             {
@@ -33,7 +35,14 @@ namespace eProject3.Controllers
                     return NotFound("No seats found for the given coach ID");
                 }
 
-                return Ok(seats);
+                var seatDetails = seats.Select(s => new
+                {
+                    s.Id,
+                    s.SeatNumber,
+                    Status = s.SeatDetails.OrderByDescending(sd => sd.Id).FirstOrDefault()?.Status
+                });
+
+                return Ok(seatDetails);
             }
             catch (Exception ex)
             {
@@ -42,11 +51,11 @@ namespace eProject3.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> Create(Seat Seat)
+        public async Task<ActionResult> Create(Seat seat)
         {
             try
             {
-                var result = await repo.CreateSeat(Seat);
+                var result = await repo.CreateSeat(seat);
                 if (result == null)
                 {
                     return BadRequest("Cannot create");
@@ -84,11 +93,11 @@ namespace eProject3.Controllers
         }
 
         [HttpPost("update")]
-        public async Task<ActionResult> Update(Seat Seat)
+        public async Task<ActionResult> Update(Seat seat)
         {
             try
             {
-                var result = await repo.UpdateSeat(Seat);
+                var result = await repo.UpdateSeat(seat);
                 if (result == null)
                 {
                     return BadRequest("Cannot update");

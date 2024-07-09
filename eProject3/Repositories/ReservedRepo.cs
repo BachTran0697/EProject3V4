@@ -1,6 +1,10 @@
 ﻿using eProject3.Interfaces;
 using eProject3.Models;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace eProject3.Repositories
 {
@@ -22,20 +26,26 @@ namespace eProject3.Repositories
             db.Reservations.Update(reservation);
             await db.SaveChangesAsync();
         }
+
         public async Task<Reservation> CreateReservation(Reservation reservation)
         {
-            // Kiểm tra tính khả dụng của chỗ ngồi
+            // Check seat availability
             var seatAvailable = await db.Seats
-                .Where(s => s.Id == reservation.Seat_id && s.CoachId == reservation.Coach_id)
-                .FirstOrDefaultAsync(s => !s.SeatDetails.Any() || s.SeatDetails.Any(sd => sd.Status == "free"));
+                .Include(s => s.SeatDetails)
+                .FirstOrDefaultAsync(s => s.Id == reservation.Seat_id &&
+                                          s.CoachId == reservation.Coach_id &&
+                                          s.SeatDetails.All(sd => sd.Status != "Reserved"));
 
             if (seatAvailable == null)
             {
                 throw new Exception("Seat is not available.");
             }
-            // Tạo mã vé
+
+            // Generate ticket code
             reservation.Ticket_code = GenerateTicketCode();
-            var nReserved = new Reservation
+
+            // Create new reservation
+            var newReservation = new Reservation
             {
                 Name = reservation.Name,
                 Email = reservation.Email,
@@ -43,90 +53,67 @@ namespace eProject3.Repositories
                 Ticket_code = reservation.Ticket_code,
                 Station_begin_id = reservation.Station_begin_id,
                 Station_end_id = reservation.Station_end_id,
-                Time_begin=reservation.Time_begin,
-                Time_end=reservation.Time_end,
+                Time_begin = reservation.Time_begin,
+                Time_end = reservation.Time_end,
                 Train_id = reservation.Train_id,
                 Coach_id = reservation.Coach_id,
                 Seat_id = reservation.Seat_id,
                 Price = reservation.Price,
                 IsCancelled = false
             };
-            db.Reservations.Add(nReserved);
-            await db.SaveChangesAsync();
-            // Đánh dấu chỗ ngồi đã được đặt và tạo mới SeatDetail
-            var seat = await db.Seats
-                .Include(s => s.SeatDetails)
-                .FirstAsync(s => s.Id == reservation.Seat_id);
 
+            db.Reservations.Add(newReservation);
+            await db.SaveChangesAsync();
+
+            // Mark seat as reserved
             var newSeatDetail = new SeatDetail
             {
                 Status = "Reserved",
                 Station_code_begin = reservation.Station_begin_id,
                 Station_code_end = reservation.Station_end_id,
-                SeatId = seat.Id
+                SeatId = reservation.Seat_id
             };
+
             db.SeatDetails.Add(newSeatDetail);
             await db.SaveChangesAsync();
-            return reservation;
+
+            return newReservation;
         }
 
         private string GenerateTicketCode()
         {
-            // Lấy phần năm, tháng, ngày, giờ, phút, giây từ ngày giờ hiện tại
             string dateTimePart = DateTime.Now.ToString("yyyyMMddHHmmss");
-
-            // Tạo phần ngẫu nhiên
             string randomPart = Guid.NewGuid().ToString().Substring(0, 4).ToUpper();
-
-            // Kết hợp cả hai phần lại
             return $"{dateTimePart}{randomPart}";
         }
 
         public async Task<Reservation> FinishReservation(int id)
         {
-            try
+            var reservation = await GetReservationById(id);
+            if (reservation == null)
             {
-                var oldReserved = await GetReservationById(id);
-                if (oldReserved != null)
-                {
-                    if(oldReserved.Time_end > DateTime.Now)
-                    {
-                        // Lấy SeatDetail tương ứng
-                        var seatDetail = await db.SeatDetails
-                            .FirstOrDefaultAsync(sd => sd.SeatId == oldReserved.Seat_id && sd.Status == "Reserved");
+                throw new ArgumentException("No reservation found with the provided ID.");
+            }
 
-                        if (seatDetail != null)
-                        {
-                            // Cập nhật trạng thái SeatDetail
-                            seatDetail.Status = "Finish";
-                            db.SeatDetails.Update(seatDetail);
-                        }
-                    }
-                    
-                    await db.SaveChangesAsync();
-                    return oldReserved;
-                }
-                else
-                {
-                    throw new ArgumentException("No ID found");
-                }
-            }
-            catch (Exception ex)
+            if (reservation.Time_end <= DateTime.Now)
             {
-                throw new Exception(ex.Message);
+                var seatDetail = await db.SeatDetails
+                    .FirstOrDefaultAsync(sd => sd.SeatId == reservation.Seat_id && sd.Status == "Reserved");
+
+                if (seatDetail != null)
+                {
+                    seatDetail.Status = "Finished";
+                    db.SeatDetails.Update(seatDetail);
+                    await db.SaveChangesAsync();
+                }
             }
+
+            return reservation;
         }
 
         public async Task<Reservation> GetReservationById(int id)
         {
-            try
-            {
-                return await db.Reservations.SingleOrDefaultAsync(s => s.Id == id);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
+            return await db.Reservations.SingleOrDefaultAsync(s => s.Id == id);
         }
 
         public async Task<IEnumerable<Reservation>> GetReservations()
@@ -134,28 +121,31 @@ namespace eProject3.Repositories
             return await db.Reservations.ToListAsync();
         }
 
-        public async Task<Reservation> UpdateReservation(Reservation Reservation)
+        public async Task<Reservation> UpdateReservation(Reservation reservation)
         {
-            var oldReserved = await GetReservationById(Reservation.Id);
-            if (oldReserved != null)
+            var existingReservation = await GetReservationById(reservation.Id);
+            if (existingReservation == null)
             {
-                var userType = typeof(Reservation);
-                foreach (var property in userType.GetProperties())
-                {
-                    var newValue = property.GetValue(Reservation);
-                    if (newValue != null && !string.IsNullOrWhiteSpace(newValue.ToString()))
-                    {
-                        property.SetValue(oldReserved, newValue);
-                    }
-                }
-                db.Reservations.Update(oldReserved);
-                await db.SaveChangesAsync();
-                return oldReserved;
+                throw new ArgumentException("No reservation found with the provided ID.");
             }
-            else
-            {
-                throw new ArgumentException("No ID found");
-            }
+
+            existingReservation.Name = reservation.Name ?? existingReservation.Name;
+            existingReservation.Email = reservation.Email ?? existingReservation.Email;
+            existingReservation.Phone = reservation.Phone ?? existingReservation.Phone;
+            existingReservation.Station_begin_id = reservation.Station_begin_id;
+            existingReservation.Station_end_id = reservation.Station_end_id;
+            existingReservation.Time_begin = reservation.Time_begin;
+            existingReservation.Time_end = reservation.Time_end;
+            existingReservation.Train_id = reservation.Train_id;
+            existingReservation.Coach_id = reservation.Coach_id;
+            existingReservation.Seat_id = reservation.Seat_id;
+            existingReservation.Price = reservation.Price;
+            existingReservation.IsCancelled = reservation.IsCancelled;
+
+            db.Reservations.Update(existingReservation);
+            await db.SaveChangesAsync();
+
+            return existingReservation;
         }
     }
 }

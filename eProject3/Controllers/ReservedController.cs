@@ -1,7 +1,8 @@
 ﻿using eProject3.Interfaces;
 using eProject3.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
 namespace eProject3.Controllers
 {
@@ -9,7 +10,7 @@ namespace eProject3.Controllers
     [ApiController]
     public class ReservedController : ControllerBase
     {
-        private IReservedRepo repo;
+        private readonly IReservedRepo repo;
 
         public ReservedController(IReservedRepo repo)
         {
@@ -19,10 +20,9 @@ namespace eProject3.Controllers
         [HttpGet]
         public async Task<ActionResult> GetAll()
         {
-            return Ok(await repo.GetReservations());
+            var reservations = await repo.GetReservations();
+            return Ok(reservations);
         }
-
-        
 
         [HttpPost]
         public async Task<ActionResult> Create(Reservation reservation)
@@ -30,14 +30,7 @@ namespace eProject3.Controllers
             try
             {
                 var result = await repo.CreateReservation(reservation);
-                if (result == null)
-                {
-                    return BadRequest("Cannot create");
-                }
-                else
-                {
-                    return Ok(result);
-                }
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -51,14 +44,7 @@ namespace eProject3.Controllers
             try
             {
                 var result = await repo.FinishReservation(id);
-                if (result == null)
-                {
-                    return BadRequest("Cannot delete");
-                }
-                else
-                {
-                    return Ok(result);
-                }
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -67,19 +53,12 @@ namespace eProject3.Controllers
         }
 
         [HttpPost("update")]
-        public async Task<ActionResult> Update(Reservation Reservation)
+        public async Task<ActionResult> Update(Reservation reservation)
         {
             try
             {
-                var result = await repo.UpdateReservation(Reservation);
-                if (result == null)
-                {
-                    return BadRequest("Cannot update");
-                }
-                else
-                {
-                    return Ok(result);
-                }
+                var result = await repo.UpdateReservation(reservation);
+                return Ok(result);
             }
             catch (ArgumentException ex)
             {
