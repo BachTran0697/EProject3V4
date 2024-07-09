@@ -12,7 +12,7 @@ using eProject3.Models;
 namespace eProject3.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20240708112917_InitialCreate")]
+    [Migration("20240708131756_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -24,6 +24,44 @@ namespace eProject3.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("eProject3.Models.CancelRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Ticket_Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CancelRequests");
+                });
+
+            modelBuilder.Entity("eProject3.Models.CancelResponse", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("CancellationFee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ReservationDetailsId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReservationDetailsId");
+
+                    b.ToTable("CancelResponses");
+                });
 
             modelBuilder.Entity("eProject3.Models.Cancellation", b =>
                 {
@@ -81,6 +119,26 @@ namespace eProject3.Migrations
                     b.HasIndex("TrainId");
 
                     b.ToTable("Coaches");
+                });
+
+            modelBuilder.Entity("eProject3.Models.ConfirmCancelRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("CancellationFee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Ticket_Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("confirmCancelRequests");
                 });
 
             modelBuilder.Entity("eProject3.Models.Fares", b =>
@@ -143,12 +201,21 @@ namespace eProject3.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal?>("CancellationFee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("CancelledDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("Coach_id")
                         .HasColumnType("int");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsCancelled")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -158,8 +225,8 @@ namespace eProject3.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<float?>("Price")
-                        .HasColumnType("real");
+                    b.Property<decimal?>("Price")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Seat_id")
                         .HasColumnType("int");
@@ -187,6 +254,25 @@ namespace eProject3.Migrations
                     b.HasIndex("Train_id");
 
                     b.ToTable("Reservations");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Coach_id = 1,
+                            Email = "abc",
+                            IsCancelled = false,
+                            Name = "abc",
+                            Phone = "123",
+                            Price = 100m,
+                            Seat_id = 1,
+                            Station_begin_id = 1,
+                            Station_end_id = 3,
+                            Ticket_code = "ticket001",
+                            Time_begin = new DateTime(2024, 7, 11, 1, 0, 0, 0, DateTimeKind.Unspecified),
+                            Time_end = new DateTime(2024, 7, 12, 1, 0, 0, 0, DateTimeKind.Unspecified),
+                            Train_id = 1
+                        });
                 });
 
             modelBuilder.Entity("eProject3.Models.Seat", b =>
@@ -534,6 +620,17 @@ namespace eProject3.Migrations
                             LOGIN_PASSWORD = "123",
                             role_id = 2
                         });
+                });
+
+            modelBuilder.Entity("eProject3.Models.CancelResponse", b =>
+                {
+                    b.HasOne("eProject3.Models.Reservation", "ReservationDetails")
+                        .WithMany()
+                        .HasForeignKey("ReservationDetailsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ReservationDetails");
                 });
 
             modelBuilder.Entity("eProject3.Models.Coach", b =>

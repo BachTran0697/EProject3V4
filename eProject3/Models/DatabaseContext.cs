@@ -20,6 +20,9 @@ namespace eProject3.Models
         public DbSet<Train_Schedule> Train_Schedules { get; set; }
         public DbSet<Train_Schedule_Detail> Train_Schedule_Details { get; set; }
         public DbSet<SeatDetail> SeatDetails { get; set; }
+        public DbSet<CancelRequest> CancelRequests { get; set; }
+        public DbSet<CancelResponse> CancelResponses { get; set; }
+        public DbSet<ConfirmCancelRequest> confirmCancelRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -106,6 +109,12 @@ namespace eProject3.Models
                 new Fares { Id = 3, ClassType = "Sleeper Class", Price_on_type = 300, BaseFarePerKm = 7, AdditionalCharges = 30 }
             });
 
+            modelBuilder.Entity<Reservation>().HasData(new Reservation[]
+            {
+                new Reservation { Id = 1, Name="abc", Email="abc", Phone="123", Station_begin_id = 1, Station_end_id =3,
+                                  Time_begin=new DateTime(2024,7,11,01,00,00), Time_end = new DateTime(2024,7,12,01,00,00),
+                                  Ticket_code = "ticket001", Train_id=1,Coach_id=1,Seat_id=1, Price=100m, IsCancelled=false}
+            });
 
             base.OnModelCreating(modelBuilder);
         }

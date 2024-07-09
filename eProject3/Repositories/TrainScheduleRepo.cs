@@ -172,30 +172,80 @@ namespace eProject3.Repositories
                 throw new Exception(ex.Message);
             }
         }
-        public async Task<Train_Schedule> UpdateSchedule(Train_Schedule train_Schedule)
+        public async Task<Train_Schedule> UpdateSchedule(Train_Schedule updatedSchedule)
         {
-            var oldSche = await GetScheduleById(train_Schedule.Id);
-            if (oldSche != null)
+            try
             {
-                var userType = typeof(Train);
-                foreach (var property in userType.GetProperties())
+                // Lấy lịch trình hiện tại từ cơ sở dữ liệu
+                var currentSchedule = await db.Train_Schedules
+                    .Include(ts => ts.Detail)
+                    .FirstOrDefaultAsync(ts => ts.Id == updatedSchedule.Id);
+
+                if (currentSchedule == null)
                 {
-                    var newValue = property.GetValue(train_Schedule);
-                    if (newValue != null && !string.IsNullOrWhiteSpace(newValue.ToString()))
-                    {
-                        property.SetValue(oldSche, newValue);
-                    }
+                    throw new Exception("Schedule not found");
                 }
-                db.Train_Schedules.Update(oldSche);
+
+                // Cập nhật thông tin của lịch trình
+                currentSchedule.TrainId = updatedSchedule.TrainId;
+                currentSchedule.Station_Code_begin = updatedSchedule.Station_Code_begin;
+                currentSchedule.Station_code_end = updatedSchedule.Station_code_end;
+                currentSchedule.Direction = updatedSchedule.Direction;
+                currentSchedule.Route = updatedSchedule.Route;
+                currentSchedule.Time_begin = updatedSchedule.Time_begin;
+                currentSchedule.Time_end = updatedSchedule.Time_end;
+
+                // Tạo chuỗi station code pass mới
+                var pass = new List<int>();
+                for (int i = updatedSchedule.Station_Code_begin; i <= updatedSchedule.Station_code_end; i++)
+                {
+                    pass.Add(i);
+                }
+                currentSchedule.Station_code_pass = string.Join(",", pass);
+
+                // Xóa các chi tiết cũ
+                db.Train_Schedule_Details.RemoveRange(currentSchedule.Detail);
+
+                // Thêm các chi tiết mới
+                for (int i = updatedSchedule.Station_Code_begin; i < updatedSchedule.Station_code_end; i++)
+                {
+                    int currentStationBegin = updatedSchedule.Station_Code_begin + i;
+                    int currentStationEnd = updatedSchedule.Station_Code_begin + i + 1;
+
+                    int numOfRes = await db.SeatDetails
+                        .Where(sd => sd.Status == "Reserved"
+                            && currentStationBegin <= sd.Station_code_begin
+                            && sd.Station_code_end <= currentStationEnd)
+                        .CountAsync();
+
+                    int totalSeats = await db.Coaches
+                        .Where(c => c.TrainId == updatedSchedule.TrainId)
+                        .SumAsync(c => c.SeatsNumber);
+
+                    int numOfVac = totalSeats - numOfRes;
+
+                    currentSchedule.Detail.Add(new Train_Schedule_Detail
+                    {
+                        Station_Code_begin = currentStationBegin,
+                        Station_code_end = currentStationEnd,
+                        Seat_reserved = numOfRes,
+                        Seat_vacant = numOfVac
+                    });
+                }
+
+                // Lưu các thay đổi vào cơ sở dữ liệu
                 await db.SaveChangesAsync();
-                return oldSche;
+
+                return currentSchedule; // Trả về lịch trình đã cập nhật
             }
-            else
+            catch (Exception ex)
             {
-                throw new ArgumentException("No ID found");
+                // Ném lại ngoại lệ để bảo toàn stack trace
+                throw;
             }
         }
 
-        
+
+
     }
 }

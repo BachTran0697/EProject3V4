@@ -17,6 +17,12 @@ namespace eProject3.Controllers
             this.repo = repo;
         }
 
+        [HttpGet("{classType}")]
+        public async Task<ActionResult> GetByClassType(string classType)
+        {
+            return Ok(await repo.GetFareByClassType(classType));
+        }
+
         [HttpGet]
         public async Task<ActionResult> GetAll()
         {

@@ -19,8 +19,10 @@ namespace eProject3.Models
         public int Train_id { get; set; }
         public int Coach_id { get; set; }
         public int Seat_id { get; set; }
-        public float? Price { get; set; } 
-
+        public decimal? Price { get; set; } 
+        public bool IsCancelled { get; set; }
+        public decimal? CancellationFee { get; set; }
+        public DateTime? CancelledDate { get; set; }
         public virtual Train? Train { get; set; }
         public virtual ICollection<Station>? Station { get; set; }
     }

@@ -11,21 +11,48 @@ namespace eProject3.Repositories
         {
             this.db = db;
         }
+
+        public async Task<Reservation> GetByPRNAsync(string prn)
+        {
+            return await db.Reservations.FirstOrDefaultAsync(r => r.Ticket_code == prn);
+        }
+
+        public async Task UpdateAsync(Reservation reservation)
+        {
+            db.Reservations.Update(reservation);
+            await db.SaveChangesAsync();
+        }
         public async Task<Reservation> CreateReservation(Reservation reservation)
         {
             // Kiểm tra tính khả dụng của chỗ ngồi
             var seatAvailable = await db.Seats
                 .Where(s => s.Id == reservation.Seat_id && s.CoachId == reservation.Coach_id)
-                .FirstOrDefaultAsync(s => s.SeatDetails.Any(sd => sd.Status == "free"));
+                .FirstOrDefaultAsync(s => !s.SeatDetails.Any() || s.SeatDetails.Any(sd => sd.Status == "free"));
 
             if (seatAvailable == null)
             {
                 throw new Exception("Seat is not available.");
             }
-
             // Tạo mã vé
             reservation.Ticket_code = GenerateTicketCode();
-
+            var nReserved = new Reservation
+            {
+                Name = reservation.Name,
+                Email = reservation.Email,
+                Phone = reservation.Phone,
+                Ticket_code = reservation.Ticket_code,
+                Station_begin_id = reservation.Station_begin_id,
+                Station_end_id = reservation.Station_end_id,
+                Time_begin=reservation.Time_begin,
+                Time_end=reservation.Time_end,
+                Train_id = reservation.Train_id,
+                Coach_id = reservation.Coach_id,
+                Seat_id = reservation.Seat_id,
+                Price = reservation.Price,
+                IsCancelled = false
+            };
+            db.Reservations.Add(nReserved);
+            await db.SaveChangesAsync();
             // Đánh dấu chỗ ngồi đã được đặt và tạo mới SeatDetail
             var seat = await db.Seats
                 .Include(s => s.SeatDetails)
@@ -38,15 +65,21 @@ namespace eProject3.Repositories
                 Station_code_end = reservation.Station_end_id,
                 SeatId = seat.Id
             };
-
             db.SeatDetails.Add(newSeatDetail);
-
+            await db.SaveChangesAsync();
             return reservation;
         }
 
         private string GenerateTicketCode()
         {
-            return Guid.NewGuid().ToString().Substring(0, 8).ToUpper();
+            // Lấy phần năm, tháng, ngày, giờ, phút, giây từ ngày giờ hiện tại
+            string dateTimePart = DateTime.Now.ToString("yyyyMMddHHmmss");
+
+            // Tạo phần ngẫu nhiên
+            string randomPart = Guid.NewGuid().ToString().Substring(0, 4).ToUpper();
+
+            // Kết hợp cả hai phần lại
+            return $"{dateTimePart}{randomPart}";
         }
 
         public async Task<Reservation> FinishReservation(int id)

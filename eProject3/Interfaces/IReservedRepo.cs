@@ -9,5 +9,7 @@ namespace eProject3.Interfaces
         Task<Reservation> CreateReservation(Reservation Reservation);
         Task<Reservation> UpdateReservation(Reservation Reservation);
         Task<Reservation> FinishReservation(int id);
+        Task<Reservation> GetByPRNAsync(string prn);
+        Task UpdateAsync(Reservation reservation);
     }
 }

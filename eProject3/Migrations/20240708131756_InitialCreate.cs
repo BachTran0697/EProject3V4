@@ -29,6 +29,33 @@ namespace eProject3.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CancelRequests",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Ticket_Code = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CancelRequests", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "confirmCancelRequests",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Ticket_Code = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CancellationFee = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_confirmCancelRequests", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Fares",
                 columns: table => new
                 {
@@ -121,7 +148,10 @@ namespace eProject3.Migrations
                     Train_id = table.Column<int>(type: "int", nullable: false),
                     Coach_id = table.Column<int>(type: "int", nullable: false),
                     Seat_id = table.Column<int>(type: "int", nullable: false),
-                    Price = table.Column<float>(type: "real", nullable: true)
+                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    IsCancelled = table.Column<bool>(type: "bit", nullable: false),
+                    CancellationFee = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    CancelledDate = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -177,6 +207,26 @@ namespace eProject3.Migrations
                         principalTable: "Coaches",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CancelResponses",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ReservationDetailsId = table.Column<int>(type: "int", nullable: false),
+                    CancellationFee = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CancelResponses", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CancelResponses_Reservations_ReservationDetailsId",
+                        column: x => x.ReservationDetailsId,
+                        principalTable: "Reservations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -286,6 +336,11 @@ namespace eProject3.Migrations
                 });
 
             migrationBuilder.InsertData(
+                table: "Reservations",
+                columns: new[] { "Id", "CancellationFee", "CancelledDate", "Coach_id", "Email", "IsCancelled", "Name", "Phone", "Price", "Seat_id", "Station_begin_id", "Station_end_id", "Ticket_code", "Time_begin", "Time_end", "Train_id" },
+                values: new object[] { 1, null, null, 1, "abc", false, "abc", "123", 100m, 1, 1, 3, "ticket001", new DateTime(2024, 7, 11, 1, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2024, 7, 12, 1, 0, 0, 0, DateTimeKind.Unspecified), 1 });
+
+            migrationBuilder.InsertData(
                 table: "Train_Schedules",
                 columns: new[] { "Id", "DetailID", "Direction", "Route", "Station_Code_begin", "Station_code_end", "Station_code_pass", "Time_begin", "Time_end", "TrainId" },
                 values: new object[,]
@@ -294,6 +349,11 @@ namespace eProject3.Migrations
                     { 2, null, "down", 2, 2, 4, "3", new DateTime(2024, 7, 5, 1, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2024, 7, 8, 1, 0, 0, 0, DateTimeKind.Unspecified), 1 },
                     { 3, null, "down", 2, 1, 4, "2,3", new DateTime(2024, 7, 6, 1, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2024, 7, 9, 1, 0, 0, 0, DateTimeKind.Unspecified), 1 }
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CancelResponses_ReservationDetailsId",
+                table: "CancelResponses",
+                column: "ReservationDetailsId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Coaches_TrainId",
@@ -336,6 +396,15 @@ namespace eProject3.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Cancellations");
+
+            migrationBuilder.DropTable(
+                name: "CancelRequests");
+
+            migrationBuilder.DropTable(
+                name: "CancelResponses");
+
+            migrationBuilder.DropTable(
+                name: "confirmCancelRequests");
 
             migrationBuilder.DropTable(
                 name: "Fares");

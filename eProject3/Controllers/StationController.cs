@@ -21,6 +21,30 @@ namespace eProject3.Controllers
         {
             return Ok(await repo.GetStations());
         }
+
+        [HttpGet("from/{fromStation}")]
+        public async Task<ActionResult> GetfromStation(int fromStation)
+        {
+            var station = await repo.GetStationById(fromStation);
+            if (station == null)
+            {
+                return NotFound(); // Return 404 if station with ID is not found
+            }
+            return Ok(station);
+        }
+
+        // GET api/Station/to/{toStation}
+        [HttpGet("to/{toStation}")]
+        public async Task<ActionResult> GettoStation(int toStation)
+        {
+            var station = await repo.GetStationById(toStation);
+            if (station == null)
+            {
+                return NotFound(); // Return 404 if station with ID is not found
+            }
+            return Ok(station);
+        }
+
         [HttpPost]
 
         public async Task<ActionResult> Create(Station station)

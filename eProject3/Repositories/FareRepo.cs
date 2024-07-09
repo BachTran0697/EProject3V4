@@ -11,6 +11,17 @@ namespace eProject3.Repositories
         {
             this.db = db;
         }
+        public async Task<Fares> GetFareByClassType(string classType)
+        {
+            try
+            {
+                return await db.Fares.SingleOrDefaultAsync(s => s.ClassType == classType);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
         public async Task<Fares> CreateFare(Fares fare)
         {
             try

@@ -9,5 +9,6 @@ namespace eProject3.Interfaces
         Task<Fares> CreateFare(Fares fare);
         Task<Fares> UpdateFare(Fares fare);
         Task<Fares> DeleteFare(int id);
+        Task<Fares> GetFareByClassType(string classType);
     }
 }
