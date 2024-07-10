@@ -20,6 +20,14 @@ namespace eProject3.Repositories
             var dayMaster = await db.Train_Schedules.Where(ts => ts.Time_begin <= today && today <= ts.Time_end).ToListAsync();
             return dayMaster;
         }
+        public async Task<IEnumerable<Train_Schedule>> GetSchedulesByDayOfWeekAsync(DayOfWeek dayOfWeek)
+        {
+            // Tải dữ liệu từ cơ sở dữ liệu trước khi lọc
+            var schedules = await db.Train_Schedules.ToListAsync();
+
+            // Thực hiện lọc trên phía máy khách
+            return schedules.Where(ts => ts.Time_begin.DayOfWeek == dayOfWeek);
+        }
         public async Task<Train_Schedule> CreateSchedule(Train_Schedule train_Schedule)
         {
             try

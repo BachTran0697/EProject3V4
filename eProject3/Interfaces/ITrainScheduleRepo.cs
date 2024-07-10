@@ -11,6 +11,7 @@ namespace eProject3.Interfaces
         Task<Train_Schedule> DeleteSchedule(int id);
         Task<List<Train_Schedule>> DayMaster();
         Task<List<Train_Schedule>> Booking(int fromStation,int toStation, DateTime travelTime);
+        Task<IEnumerable<Train_Schedule>> GetSchedulesByDayOfWeekAsync(DayOfWeek dayOfWeek);
 
     }
 }

@@ -21,7 +21,11 @@ namespace eProject3.Controllers
         {
             return Ok(await repo.GetSchedule());
         }
-
+        [HttpGet("day/{dayOfWeek}")]
+        public async Task<ActionResult<IEnumerable<Train_Schedule>>> GetSchedulesByDayOfWeek(DayOfWeek dayOfWeek)
+        {
+            return Ok(await repo.GetSchedulesByDayOfWeekAsync(dayOfWeek));
+        }
         [HttpPost]
         public async Task<ActionResult> Create(Train_Schedule Schedule)
         {
