@@ -64,6 +64,24 @@ namespace eProject3.Controllers
             {
                 return BadRequest(ex.Message);
             }
+
+        }
+        [HttpGet("user")]
+        public async Task<ActionResult> GetByUser([FromQuery] string name, [FromQuery] string phone)
+        {
+            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(phone))
+            {
+                return BadRequest("Name and phone are required.");
+            }
+
+            var reservations = await repo.GetReservationsByUserAsync(name, phone);
+
+            if (reservations == null || !reservations.Any())
+            {
+                return NotFound("No reservations found for the given name and phone.");
+            }
+
+            return Ok(reservations);
         }
     }
 }

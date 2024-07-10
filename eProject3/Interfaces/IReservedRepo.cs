@@ -11,5 +11,6 @@ namespace eProject3.Interfaces
         Task<Reservation> FinishReservation(int id);
         Task<Reservation> GetByPRNAsync(string prn);
         Task UpdateAsync(Reservation reservation);
+        Task<IEnumerable<Reservation>> GetReservationsByUserAsync(string name, string phone);
     }
 }

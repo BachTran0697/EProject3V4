@@ -147,5 +147,11 @@ namespace eProject3.Repositories
 
             return existingReservation;
         }
+        public async Task<IEnumerable<Reservation>> GetReservationsByUserAsync(string name, string phone)
+        {
+            return await db.Reservations
+                .Where(r => r.Name == name && r.Phone == phone)
+                .ToListAsync();
+        }
     }
 }
