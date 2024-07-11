@@ -16,7 +16,7 @@ namespace eProject3.Models
         public DbSet<Coach> Coaches { get; set; }
         public DbSet<Fares> Fares { get; set; }
         public DbSet<Reservation> Reservations { get; set; }
-        public DbSet<Cancellation> Cancellations { get; set; }
+        
         public DbSet<Train_Schedule> Train_Schedules { get; set; }
         public DbSet<Train_Schedule_Detail> Train_Schedule_Details { get; set; }
         public DbSet<SeatDetail> SeatDetails { get; set; }

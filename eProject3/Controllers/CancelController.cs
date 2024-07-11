@@ -15,27 +15,30 @@ namespace eProject3.Controllers
         {
             this.repo = repo;
         }
-        [HttpPost("cancel")]
-        public async Task<IActionResult> CancelReservation([FromBody] CancelRequest request)
+        [HttpGet]
+        public async Task<ActionResult> GetAll()
         {
             try
             {
-                var response = await repo.CancelReservationAsync(request);
-                return Ok(response);
+                var cancelledReservations = await repo.GetCancellations();
+                return Ok(cancelledReservations);
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return StatusCode(500, "An error occurred while processing your request.");
             }
         }
-
-        [HttpPost("confirm-cancel")]
-        public async Task<IActionResult> ConfirmCancel([FromBody] ConfirmCancelRequest request)
+        [HttpPost("cancel/{ticketcode}/{email}/{phone}")]
+        public async Task<IActionResult> CancelReservationAsync(string ticketcode, string email = null, string phone = null)
         {
+            if (string.IsNullOrEmpty(email) && string.IsNullOrEmpty(phone))
+            {
+                return BadRequest(new { message = "Email or phone must be provided." });
+            }
             try
             {
-                var message = await repo.ConfirmCancelAsync(request);
-                return Ok(new { message });
+                var response = await repo.CancelReservationAsync(ticketcode, email, phone);
+                return Ok(response);
             }
             catch (ArgumentException ex)
             {

@@ -8,7 +8,7 @@ namespace eProject3.Interfaces
         Task<Coach> GetCoachById(int id);
         Task<Coach> CreateCoach(Coach coach);
         Task<Coach> UpdateCoach(Coach coach);
-        Task<Coach> DeleteCoach(int id);
+        Task<bool> DeleteCoach(int id);
         Task<IEnumerable<Coach>> GetCoachesByTrainId(int trainId);
     }
 }

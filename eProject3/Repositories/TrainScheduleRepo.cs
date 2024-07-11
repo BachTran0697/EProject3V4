@@ -33,10 +33,11 @@ namespace eProject3.Repositories
             try
             {
                 var pass = new List<int>();
-                for (int i = train_Schedule.Station_Code_begin; i <= train_Schedule.Station_code_end; i++)
+                for (int i = train_Schedule.Station_Code_begin + 1; i < train_Schedule.Station_code_end; i++)
                 {
                     pass.Add(i);
                 }
+                
                 var passString = string.Join(",", pass);
                 var newSchedule = new Train_Schedule
                 {
@@ -86,14 +87,6 @@ namespace eProject3.Repositories
 
                 // Save the changes to the database
                 await db.SaveChangesAsync();
-                /*var NSchDetail = new Train_Schedule_Detail
-                {
-                    Train_ScheduleId = train_Schedule.Id,
-                    Station_Code_begin = train_Schedule.Station_Code_begin + 1,
-                    Station_code_end = train_Schedule.Station_Code_begin + 1,
-
-                }*/
-
 
                 return newSchedule; // Return the newly created schedule
             }
@@ -205,7 +198,7 @@ namespace eProject3.Repositories
 
                 // Tạo chuỗi station code pass mới
                 var pass = new List<int>();
-                for (int i = updatedSchedule.Station_Code_begin; i <= updatedSchedule.Station_code_end; i++)
+                for (int i = updatedSchedule.Station_Code_begin + 1; i < updatedSchedule.Station_code_end; i++)
                 {
                     pass.Add(i);
                 }
