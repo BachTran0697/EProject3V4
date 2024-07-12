@@ -27,6 +27,7 @@ namespace eProject3.Controllers
             return Ok(await repo.GetSchedulesByDayOfWeekAsync(dayOfWeek));
         }
         [HttpPost]
+        [HttpPost]
         public async Task<ActionResult> Create(Train_Schedule Schedule)
         {
             try

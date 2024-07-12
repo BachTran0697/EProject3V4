@@ -16,7 +16,23 @@ namespace eProject3.Controllers
         {
             this.repo = repo;
         }
-
+        [HttpGet("sales-summary")]
+        public async Task<ActionResult> GetSalesSummary([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+        {
+            var reservations = await repo.GetReservations();
+            var summary = reservations
+                .Where(r => r.PayStatus == "Paid" && r.Time_begin.Date >= startDate.Date && r.Time_begin.Date <= endDate.Date)
+                .GroupBy(r => r.Time_begin.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    TotalSales = g.Count(),
+                    TotalCancel = g.Count(r => r.IsCancelled),
+                    TotalRevenue = g.Sum(r => r.IsCancelled ? 0 : r.Price)
+                })
+                .ToList();
+            return Ok(summary);
+        }
         [HttpGet]
         public async Task<ActionResult> GetAll()
         {

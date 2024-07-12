@@ -37,7 +37,7 @@ namespace eProject3.Repositories
                 {
                     pass.Add(i);
                 }
-                
+
                 var passString = string.Join(",", pass);
                 var newSchedule = new Train_Schedule
                 {
@@ -55,14 +55,15 @@ namespace eProject3.Repositories
                 db.Train_Schedules.Add(newSchedule);
                 await db.SaveChangesAsync();
 
-                var schedetail = await db.Train_Schedules
-                                .Include(ts => ts.Detail)
-                                .FirstAsync(ts => ts.Id == train_Schedule.DetailID);
+                // Sau khi lưu newSchedule, lấy ID của nó
+                var savedScheduleId = newSchedule.Id;
 
+                // Tạo các chi tiết cho lịch trình
+                var scheduleDetails = new List<Train_Schedule_Detail>();
                 for (int i = train_Schedule.Station_Code_begin; i < train_Schedule.Station_code_end; i++)
                 {
-                    int currentStationBegin = train_Schedule.Station_Code_begin + i;
-                    int currentStationEnd = train_Schedule.Station_Code_begin + i + 1;
+                    int currentStationBegin = i;
+                    int currentStationEnd = i + 1;
 
                     int numOfRes = await db.SeatDetails
                         .Where(sd => sd.Status == "Reserved"
@@ -74,10 +75,16 @@ namespace eProject3.Repositories
                         .Where(c => c.TrainId == train_Schedule.TrainId)
                         .SumAsync(c => c.SeatsNumber);
 
+                    if (totalSeats == 0)
+                    {
+                        throw new Exception("Total seats is zero");
+                    }
+
                     int numOfVac = totalSeats - numOfRes;
 
-                    schedetail.Detail.Add(new Train_Schedule_Detail
+                    scheduleDetails.Add(new Train_Schedule_Detail
                     {
+                        Train_ScheduleId = savedScheduleId,
                         Station_Code_begin = currentStationBegin,
                         Station_code_end = currentStationEnd,
                         Seat_reserved = numOfRes,
@@ -85,14 +92,15 @@ namespace eProject3.Repositories
                     });
                 }
 
-                // Save the changes to the database
+                db.Train_Schedule_Details.AddRange(scheduleDetails);
                 await db.SaveChangesAsync();
 
-                return newSchedule; // Return the newly created schedule
+                return newSchedule;
             }
             catch (Exception ex)
             {
-                // Rethrow the caught exception to preserve the stack trace
+                // Log the exception
+                Console.WriteLine(ex.Message);
                 throw;
             }
         }
@@ -138,12 +146,15 @@ namespace eProject3.Repositories
         }
 
 
-        
 
-        public async Task<List<Train_Schedule>> Booking(int fromStation, int toStation, DateTime travelTime)
+
+        public async Task<List<Train_Schedule>> Booking(int fromStation, int toStation, DateTime travelDate)
         {
             try
             {
+                DateTime startOfDay = travelDate.Date;
+                DateTime endOfDay = startOfDay.AddDays(1).AddTicks(-1);
+
                 if (fromStation < toStation)
                 {
                     string bookDirect = "down";
@@ -151,8 +162,8 @@ namespace eProject3.Repositories
                                                                 ts.Station_Code_begin <= toStation &&
                                                                 ts.Station_code_end >= fromStation &&
                                                                 ts.Station_code_end >= toStation &&
-                                                                ts.Time_begin <= travelTime &&
-                                                                ts.Time_end >= travelTime &&
+                                                                ts.Time_begin >= startOfDay &&
+                                                                ts.Time_begin <= endOfDay &&
                                                                 ts.Direction == bookDirect).ToListAsync();
                 }
                 if (fromStation > toStation)
@@ -162,8 +173,8 @@ namespace eProject3.Repositories
                                                                 ts.Station_Code_begin >= toStation &&
                                                                 ts.Station_code_end <= fromStation &&
                                                                 ts.Station_code_end <= toStation &&
-                                                                ts.Time_begin <= travelTime &&
-                                                                ts.Time_end >= travelTime &&
+                                                                ts.Time_begin >= startOfDay &&
+                                                                ts.Time_begin <= endOfDay &&
                                                                 ts.Direction == bookDirect).ToListAsync();
                 }
                 return new List<Train_Schedule>();
@@ -173,6 +184,7 @@ namespace eProject3.Repositories
                 throw new Exception(ex.Message);
             }
         }
+
         public async Task<Train_Schedule> UpdateSchedule(Train_Schedule updatedSchedule)
         {
             try
