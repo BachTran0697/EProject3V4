@@ -73,48 +73,45 @@ namespace eProject3.Models
             modelBuilder.Entity<User>().HasData(new User[]
             {
                 new User {LOGIN_ID = 1, LOGIN_NAME = "admin", Address = "AAA", Email = "aaa@gmail.com", LOGIN_PASSWORD = "123", role_id = 1},
-                new User {LOGIN_ID = 2, LOGIN_NAME = "account", Address = "BBB", Email = "bbb@gmail.com", LOGIN_PASSWORD = "123", role_id = 2}
+                new User {LOGIN_ID = 2, LOGIN_NAME = "account", Address = "BBB", Email = "bbb@gmail.com", LOGIN_PASSWORD = "123", role_id = 2},
+                new User {LOGIN_ID = 3, LOGIN_NAME = "manager", Address = "CCC", Email = "ccc@gmail.com", LOGIN_PASSWORD = "123", role_id = 3}
             });
 
             modelBuilder.Entity<Station>().HasData(new Station[]
             {
-                new Station { Id = 1, Station_name = "SaiGon", Station_code = "HCM", Division_name = "nam" },
-                new Station { Id = 2, Station_name = "DaNang", Station_code = "DN", Division_name = "trung" },
-                new Station { Id = 3, Station_name = "NoiBai", Station_code = "HN", Division_name = "bac" },
-                new Station { Id = 4, Station_name = "CaoBang", Station_code = "CB", Division_name = "bac" }
+                new Station { Id = 1, Station_name = "HaNoi", Station_code = "HN", Division_name = "bac", distance=0 },
+                new Station { Id = 2, Station_name = "NinhBinh", Station_code = "NB", Division_name = "bac", distance=115 },
+                new Station { Id = 3, Station_name = "Vinh", Station_code = "V", Division_name = "bac", distance = 319 },
+                new Station { Id = 4, Station_name = "DongHoi", Station_code = "DH", Division_name = "bac", distance = 522 },
+                new Station { Id = 5, Station_name = "Hue", Station_code = "H", Division_name = "trung", distance = 688 },
+                new Station { Id = 6, Station_name = "ThanhKhe", Station_code = "TK", Division_name = "trung", distance = 788 },
+                new Station { Id = 7, Station_name = "DaNang", Station_code = "DN", Division_name = "trung", distance = 791 },
+                new Station { Id = 8, Station_name = "QuangNgai", Station_code = "QNG", Division_name = "trung", distance = 928 },
+                new Station { Id = 9, Station_name = "QuyNhon", Station_code = "QNH", Division_name = "trung", distance = 950 },
+                new Station { Id = 10, Station_name = "NhaTrang", Station_code = "NT", Division_name = "trung", distance = 1315 },
+                new Station { Id = 11, Station_name = "PhanThiet", Station_code = "PT", Division_name = "nam", distance = 1500 },
+                new Station { Id = 12, Station_name = "BienHoa", Station_code = "BH", Division_name = "nam", distance = 1697 },
+                new Station { Id = 13, Station_name = "SaiGon", Station_code = "SG", Division_name = "nam", distance = 1726 }
             });
 
 
 
             modelBuilder.Entity<Train>().HasData(new Train[]
             {
-                new Train { Id = 1, TrainNo = "T123", TrainName = "Express", RouteId = 1, TrainType = "Electric", Speed = "120km/h" },
-                new Train { Id = 2, TrainNo = "T124", TrainName = "Local", RouteId = 2, TrainType = "Diesel", Speed = "90km/h" },
-                new Train { Id = 3, TrainNo = "T125", TrainName = "Regional", RouteId = 3, TrainType = "Hybrid", Speed = "110km/h" }
+                new Train { Id = 1, TrainNo = "T001", TrainName = "Express", RouteId = 1, TrainType = "Electric", Speed = "200" },
+                new Train { Id = 2, TrainNo = "T002", TrainName = "Local", RouteId = 2, TrainType = "Diesel", Speed = "250" },
+                new Train { Id = 3, TrainNo = "T003", TrainName = "Regional", RouteId = 3, TrainType = "Hybrid", Speed = "300" },
+                new Train { Id = 4, TrainNo = "T004", TrainName = "SuperSpeed", RouteId = 4, TrainType = "Electric", Speed = "500" },
+                new Train { Id = 5, TrainNo = "T005", TrainName = "SightSeeing", RouteId = 5, TrainType = "Hybrid", Speed = "150" }
             });
-
-            modelBuilder.Entity<Train_Schedule>().HasData(new Train_Schedule[]
-            {
-                new Train_Schedule { Id = 1, TrainId = 1, Station_Code_begin = 1, Station_code_end = 3, Station_code_pass = "2", Direction="down", Route=2, Time_begin=new DateTime(2024,7,5,01,00,00), Time_end=new DateTime(2024,7,7,1,00,00) },
-                new Train_Schedule { Id = 2, TrainId = 1, Station_Code_begin = 2, Station_code_end = 4, Station_code_pass = "3", Direction="down", Route=2, Time_begin=new DateTime(2024,7,5,01,00,00), Time_end=new DateTime(2024,7,8,1,00,00) },
-                new Train_Schedule { Id = 3, TrainId = 1, Station_Code_begin = 1, Station_code_end = 4, Station_code_pass = "2,3", Direction="down", Route=2, Time_begin=new DateTime(2024,7,6,01,00,00), Time_end=new DateTime(2024,7,9,1,00,00)  }
-            });
-
-
 
             modelBuilder.Entity<Fares>().HasData(new Fares[]
             {
                 new Fares { Id = 1, ClassType = "First Class", Price_on_type = 500, BaseFarePerKm = 10, AdditionalCharges = 50 },
                 new Fares { Id = 2, ClassType = "Second Class", Price_on_type = 400, BaseFarePerKm = 8, AdditionalCharges = 40 },
-                new Fares { Id = 3, ClassType = "Sleeper Class", Price_on_type = 300, BaseFarePerKm = 7, AdditionalCharges = 30 }
+                new Fares { Id = 3, ClassType = "Sleeper Class", Price_on_type = 1000, BaseFarePerKm = 17, AdditionalCharges = 30 }
             });
 
-            modelBuilder.Entity<Reservation>().HasData(new Reservation[]
-            {
-                new Reservation { Id = 1, Name="abc", Email="abc", Phone="123", Station_begin_id = 1, Station_end_id =3,
-                                  Time_begin=new DateTime(2024,7,11,01,00,00), Time_end = new DateTime(2024,7,12,01,00,00),
-                                  Ticket_code = "ticket001", Train_id=1,Coach_id=1,Seat_id=1, Price=100m, IsCancelled=false}
-            });
 
             base.OnModelCreating(modelBuilder);
         }
