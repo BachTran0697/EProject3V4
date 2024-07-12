@@ -23,7 +23,17 @@ namespace eProject3.Controllers
             var reservations = await repo.GetReservations();
             return Ok(reservations);
         }
+        [HttpPut("checkpay/{id}")]
+        public async Task<IActionResult> CheckPay(int id)
+        {
+            var reservation = await repo.PayCheck(id);
+            if (reservation == null)
+            {
+                return NotFound();
+            }
 
+            return Ok(reservation);
+        }
         [HttpPost]
         public async Task<ActionResult> Create(Reservation reservation)
         {

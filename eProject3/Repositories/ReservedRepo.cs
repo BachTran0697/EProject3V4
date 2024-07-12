@@ -172,5 +172,20 @@ namespace eProject3.Repositories
                 .Where(r => r.Name == name && r.Phone == phone)
                 .ToListAsync();
         }
+
+        public async Task<Reservation> PayCheck(int id)
+        {
+            var reservation = await GetReservationById(id);
+            if (reservation == null)
+            {
+                return null;
+            }
+
+            reservation.PayStatus = "Paid";
+            db.Reservations.Update(reservation);
+            await db.SaveChangesAsync();
+
+            return reservation;
+        }
     }
 }

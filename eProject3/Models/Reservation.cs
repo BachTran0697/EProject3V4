@@ -20,6 +20,7 @@ namespace eProject3.Models
         public int Coach_id { get; set; }
         public int Seat_id { get; set; }
         public decimal? Price { get; set; } 
+        public string? PayStatus { get; set; }
         public bool IsCancelled { get; set; }
         public decimal? CancellationFee { get; set; }
         public DateTime? CancelledDate { get; set; }
