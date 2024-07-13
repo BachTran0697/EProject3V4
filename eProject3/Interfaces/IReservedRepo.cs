@@ -8,10 +8,11 @@ namespace eProject3.Interfaces
         Task<Reservation> GetReservationById(int id);
         Task<Reservation> CreateReservation(Reservation Reservation);
         Task<Reservation> UpdateReservation(Reservation Reservation);
-        Task<Reservation> FinishReservation(int id);
+        Task<List<Reservation>> FinishReservation();
         Task<Reservation> GetByPRNAsync(string prn);
         Task UpdateAsync(Reservation reservation);
         Task<IEnumerable<Reservation>> GetReservationsByUserAsync(string name, string phone);
         Task<Reservation> PayCheck(int id);
+        Task<(DateTime timeBegin, DateTime timeEnd)> ConfirmReserved(Reservation reservation);
     }
 }

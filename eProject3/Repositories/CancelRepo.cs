@@ -51,6 +51,15 @@ namespace eProject3.Repositories
                 seatDetail.Status = "free";
                 db.SeatDetails.Update(seatDetail);
             }
+            var coach = await db.Coaches.FindAsync(reservation.Coach_id);
+            if (coach == null)
+            {
+                throw new InvalidOperationException("No coach found with the provided Coach ID.");
+            }
+            // Cập nhật thông tin cho coach
+            coach.Seats_reserved--;
+            coach.Seats_vacant++;
+            db.Entry(coach).State = EntityState.Modified;
 
             // Lưu thay đổi vào cơ sở dữ liệu
             await db.SaveChangesAsync();

@@ -27,6 +27,14 @@ namespace eProject3.Repositories
             await db.SaveChangesAsync();
         }
 
+        public async Task<(DateTime timeBegin, DateTime timeEnd)> ConfirmReserved(Reservation reservation)
+        {
+            var schedule = await CalculateSchedule(reservation);
+            var timeBegin = schedule.Time_begin;
+            var timeEnd = schedule.Time_end;
+            return (timeBegin, timeEnd);
+        }
+
         public async Task<Reservation> CreateReservation(Reservation reservation)
         {
             // Kiểm tra tính khả dụng của chỗ ngồi
@@ -38,9 +46,15 @@ namespace eProject3.Repositories
             {
                 throw new Exception("Seat is not available.");
             }
+
             // Tạo mã vé
             reservation.Ticket_code = GenerateTicketCode();
-            var nReserved = new Reservation
+
+            // Tính toán Time_begin và Time_end dựa trên tốc độ của Train_id và khoảng cách giữa các Station_id
+            var schedule = await CalculateSchedule(reservation);
+
+            // Tạo reservation mới và thêm vào database
+            var newReservation = new Reservation
             {
                 Name = reservation.Name,
                 Email = reservation.Email,
@@ -48,16 +62,18 @@ namespace eProject3.Repositories
                 Ticket_code = reservation.Ticket_code,
                 Station_begin_id = reservation.Station_begin_id,
                 Station_end_id = reservation.Station_end_id,
-                Time_begin = reservation.Time_begin,
-                Time_end = reservation.Time_end,
+                Time_begin = schedule.Time_begin,
+                Time_end = schedule.Time_end,
                 Train_id = reservation.Train_id,
                 Coach_id = reservation.Coach_id,
                 Seat_id = reservation.Seat_id,
                 Price = reservation.Price,
                 IsCancelled = false
             };
-            db.Reservations.Add(nReserved);
+
+            db.Reservations.Add(newReservation);
             await db.SaveChangesAsync();
+
             // Đánh dấu chỗ ngồi đã được đặt và tạo mới SeatDetail
             var seat = await db.Seats
                 .Include(s => s.SeatDetails)
@@ -70,10 +86,106 @@ namespace eProject3.Repositories
                 Station_code_end = reservation.Station_end_id,
                 SeatId = seat.Id
             };
+
             db.SeatDetails.Add(newSeatDetail);
             await db.SaveChangesAsync();
-            return reservation;
+
+            // Cập nhật thông tin cho coach
+            var coach = await db.Coaches.FindAsync(reservation.Coach_id);
+            if (coach != null)
+            {
+                coach.Seats_vacant--; // Giảm số ghế trống
+                coach.Seats_reserved++; // Tăng số ghế đã đặt
+                db.Entry(coach).State = EntityState.Modified;
+                await db.SaveChangesAsync();
+            }
+
+            return newReservation;
         }
+
+        private async Task<(DateTime Time_begin, DateTime Time_end)> CalculateSchedule(Reservation reservation)
+        {
+            var schedule = await db.Train_Schedules
+                .Where(ts =>
+                    ((ts.Station_Code_begin <= reservation.Station_begin_id &&
+                    ts.Station_code_end >= reservation.Station_end_id) ||
+                    (ts.Station_Code_begin >= reservation.Station_begin_id &&
+                    ts.Station_code_end <= reservation.Station_end_id)) &&
+                    ts.Time_begin >= reservation.Time_begin &&
+                    ts.Time_begin <= reservation.Time_end)
+                .FirstOrDefaultAsync();
+
+            if (schedule == null)
+            {
+                throw new Exception("No suitable schedule found.");
+            }
+
+            // Tính toán thời gian bắt đầu và kết thúc dựa trên tốc độ và khoảng cách
+            var startTime = await CalculateStartTime(schedule, reservation);
+            var endTime = await CalculateEndTime(schedule, reservation);
+
+            return (startTime, endTime);
+        }
+
+        private async Task<DateTime> CalculateStartTime(Train_Schedule schedule, Reservation reservation)
+        {
+            var train = await db.Trains.FindAsync(schedule.TrainId);
+            if (train == null)
+            {
+                throw new Exception($"Train with id {schedule.TrainId} not found.");
+            }
+
+            int trainSpeed = int.Parse(train.Speed);
+
+            // Retrieve stations from the database
+            var staStart = db.Stations.FirstOrDefault(s => s.Id == schedule.Station_Code_begin);
+            var staEnd = db.Stations.FirstOrDefault(s => s.Id == reservation.Station_begin_id);
+
+            if (staStart == null || staEnd == null)
+            {
+                throw new Exception("Invalid station information.");
+            }
+
+            // Calculate distance between Station_Code_begin and Station_begin_id
+            int distanceBegin = staEnd.distance - staStart.distance; // Assuming Distance is a property of the Station entity
+
+            // Calculate start time based on speed and distance
+            double hoursToAdd = distanceBegin / (double)trainSpeed; // Cast trainSpeed to double for accurate division
+            DateTime startTime = schedule.Time_begin.AddHours(hoursToAdd);
+
+            return startTime;
+        }
+
+        private async Task<DateTime> CalculateEndTime(Train_Schedule schedule, Reservation reservation)
+        {
+            var train = await db.Trains.FindAsync(schedule.TrainId);
+            if (train == null)
+            {
+                throw new Exception($"Train with id {schedule.TrainId} not found.");
+            }
+
+            int trainSpeed = int.Parse(train.Speed);
+
+            // Retrieve stations from the database
+            var staStart = db.Stations.FirstOrDefault(s => s.Id == reservation.Station_begin_id);
+            var staEnd = db.Stations.FirstOrDefault(s => s.Id == reservation.Station_end_id);
+
+            if (staStart == null || staEnd == null)
+            {
+                throw new Exception("Invalid station information.");
+            }
+
+            // Calculate distance between Station_begin_id and Station_end_id
+            int distanceEnd = staEnd.distance - staStart.distance; // Assuming Distance is a property of the Station entity
+
+            // Calculate end time based on speed and distance
+            double hoursToAdd = distanceEnd / (double)trainSpeed; // Cast trainSpeed to double for accurate division
+            DateTime endTime = schedule.Time_end.AddHours(hoursToAdd); // Use schedule.Time_end here
+
+            return endTime;
+        }
+
+
 
         private string GenerateTicketCode()
         {
@@ -87,40 +199,57 @@ namespace eProject3.Repositories
             return $"{dateTimePart}{randomPart}";
         }
 
-        public async Task<Reservation> FinishReservation(int id)
+        public async Task<List<Reservation>> FinishReservation()
         {
             try
             {
-                var oldReserved = await GetReservationById(id);
-                if (oldReserved != null)
-                {
-                    if (oldReserved.Time_end > DateTime.Now)
-                    {
-                        // Lấy SeatDetail tương ứng
-                        var seatDetail = await db.SeatDetails
-                            .FirstOrDefaultAsync(sd => sd.SeatId == oldReserved.Seat_id && sd.Status == "Reserved");
+                // Lấy danh sách các reservation cần hoàn thành
+                var reservations = await db.Reservations
+                    .Where(r => r.Time_end < DateTime.Now) // Chỉ lấy những reservation chưa kết thúc
+                    .ToListAsync();
 
-                        if (seatDetail != null)
+                foreach (var reservation in reservations)
+                {
+                    // Lấy danh sách các seatDetails tương ứng với reservation.Seat_id và có status là "Reserved"
+                    var seatDetails = await db.SeatDetails
+                        .Where(sd => sd.SeatId == reservation.Seat_id && sd.Status == "Reserved")
+                        .ToListAsync();
+
+                    // Duyệt qua từng seatDetail tương ứng với reservation
+                    foreach (var seatDetail in seatDetails)
+                    {
+                        var coach = await db.Coaches.FindAsync(reservation.Coach_id);
+                        if (coach == null)
                         {
-                            // Cập nhật trạng thái SeatDetail
-                            seatDetail.Status = "Finish";
-                            db.SeatDetails.Update(seatDetail);
+                            throw new InvalidOperationException($"No coach found with ID: {reservation.Coach_id}.");
                         }
+
+                        // Cập nhật trạng thái SeatDetail
+                        seatDetail.Status = "Finish";
+                        db.SeatDetails.Update(seatDetail);
+
+                        // Cập nhật thông tin cho coach
+                        coach.Seats_reserved--;
+                        coach.Seats_vacant++;
+                        db.Entry(coach).State = EntityState.Modified;
                     }
 
-                    await db.SaveChangesAsync();
-                    return oldReserved;
+                    // Cập nhật trạng thái của reservation
+                    reservation.IsCancelled = true; // Hoặc có thể đánh dấu là đã hoàn thành tùy theo yêu cầu
                 }
-                else
-                {
-                    throw new ArgumentException("No ID found");
-                }
+
+                await db.SaveChangesAsync();
+
+                return reservations;
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                throw new Exception($"Error finishing reservations: {ex.Message}", ex);
             }
         }
+
+
+
 
         public async Task<Reservation> GetReservationById(int id)
         {
@@ -187,5 +316,7 @@ namespace eProject3.Repositories
 
             return reservation;
         }
+
+        
     }
 }

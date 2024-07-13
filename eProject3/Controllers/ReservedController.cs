@@ -1,6 +1,7 @@
 ﻿using eProject3.Interfaces;
 using eProject3.Models;
 using Microsoft.AspNetCore.Mvc;
+using NuGet.Protocol.Core.Types;
 using System;
 using System.Threading.Tasks;
 
@@ -33,12 +34,14 @@ namespace eProject3.Controllers
                 .ToList();
             return Ok(summary);
         }
+        
         [HttpGet]
         public async Task<ActionResult> GetAll()
         {
             var reservations = await repo.GetReservations();
             return Ok(reservations);
         }
+
         [HttpPut("checkpay/{id}")]
         public async Task<IActionResult> CheckPay(int id)
         {
@@ -50,6 +53,7 @@ namespace eProject3.Controllers
 
             return Ok(reservation);
         }
+
         [HttpPost]
         public async Task<ActionResult> Create(Reservation reservation)
         {
@@ -64,12 +68,26 @@ namespace eProject3.Controllers
             }
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult> ChangeStatus(int id)
+        [HttpGet("finish")]
+        public async Task<ActionResult> ChangeStatus()
         {
             try
             {
-                var result = await repo.FinishReservation(id);
+                var result = await repo.FinishReservation();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("timeConfirm")]
+        public async Task<ActionResult> ConfirmTime([FromBody] Reservation reservation)
+        {
+            try
+            {
+                var result = await repo.ConfirmReserved(reservation);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -108,6 +126,25 @@ namespace eProject3.Controllers
             }
 
             return Ok(reservations);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult> GetById (int id)
+        {
+            try
+            {
+                var coaches = await repo.GetReservationById(id);
+                if (coaches == null)
+                {
+                    return NotFound("No coaches found for the given train ID");
+                }
+
+                return Ok(coaches);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
